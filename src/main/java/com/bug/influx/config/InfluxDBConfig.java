@@ -1,8 +1,9 @@
 package com.bug.influx.config;
 
-import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.InfluxDBClientFactory;
-import com.influxdb.client.domain.HealthCheck;
+import org.influxdb.InfluxDB;
+import org.influxdb.InfluxDBFactory;
+import org.influxdb.dto.Pong;
+import org.influxdb.dto.Query;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,29 +13,44 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class InfluxDBConfig {
 
+//    private final String influxUrl;
+//    private final char[] influxDbToken;
+//    private final String organizationName;
+//    private final String bucketName;
+//
+//    public InfluxDBConfig(@Value("${influxdb.url}") String influxUrl,
+//                          @Value("${influxdb.admin.token}") String token,
+//                          @Value("${influxdb.organization}") String organizationName,
+//                          @Value("${influxdb.bucket}") String bucketName) {
+//        this.influxUrl = influxUrl;
+//        this.influxDbToken = token.toCharArray();
+//        this.organizationName = organizationName;
+//        this.bucketName = bucketName;
+//    }
+
     private final String influxUrl;
-    private final char[] influxDbToken;
-    private final String organizationName;
-    private final String bucketName;
+    private final String username;
+    private final String password;
 
     public InfluxDBConfig(@Value("${influxdb.url}") String influxUrl,
-                          @Value("${influxdb.admin.token}") String influxDbToken,
-                          @Value("${influxdb.organization}") String organizationName,
-                          @Value("${influxdb.bucket}") String bucketName) {
+                          @Value("${influxdb.username}") String username,
+                          @Value("${influxdb.password}") String password) {
         this.influxUrl = influxUrl;
-        this.influxDbToken = influxDbToken.toCharArray();
-        this.organizationName = organizationName;
-        this.bucketName = bucketName;
+        this.username = username;
+        this.password = password;
     }
 
     @Bean
-    public InfluxDBClient createClient() {
-        InfluxDBClient influxDBClient = InfluxDBClientFactory.create(influxUrl, influxDbToken, organizationName, bucketName);
+    public InfluxDB createClient() {
+        InfluxDB influxDB = InfluxDBFactory.connect(influxUrl, username, password);
 
-        HealthCheck healthCheck = influxDBClient.health();
-        if (HealthCheck.StatusEnum.FAIL.equals(healthCheck.getStatus())) {
-            throw new BeanCreationException("InfluxDBClient has FAIL HealthCheck.");
+        Pong pong = influxDB.ping();
+        if (!pong.isGood()) {
+            throw new BeanCreationException("InfluxDB Pong is bad!");
         }
-        return influxDBClient;
+        String databaseName = "events";
+        influxDB.query(new Query("CREATE DATABASE " + databaseName));
+        influxDB.setDatabase(databaseName);
+        return influxDB;
     }
 }

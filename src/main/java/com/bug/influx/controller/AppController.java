@@ -2,10 +2,11 @@ package com.bug.influx.controller;
 
 import com.bug.influx.service.InfluxDbService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(value = "/app")
+@RequestMapping(value = "/app", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AppController {
 
     private final InfluxDbService influxDbService;
